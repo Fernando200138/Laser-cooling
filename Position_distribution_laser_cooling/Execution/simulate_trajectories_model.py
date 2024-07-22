@@ -47,7 +47,7 @@ Starkfit[1] = [1.99297730e+00, -2.30557413e-06,  6.22563075e-04,  1.66160290e+00
                           
 
 delta    = 1.e-6          # used for taking derivative of field. > 1.e-4 the results start to deviate.
-dt       = 1.e-4          # timestep in the guiding() function; depends on the acceleration. 
+dt       = 1.e-4          # timestep in the guiding() function; depends on the acceleration.
                           # 1.e-4 is sufficient for an error less than 10 micron after 5 meters of flight. 
 
 J2wavenr = 1/(100*h*c)    # factor to convert energy in cm-1 to SI
@@ -83,6 +83,9 @@ xbeam    =  10.    # size laserbeam
 X=[-0.5*xbeam,0,0.5*xbeam]
 Y=[1/np.e**2,1,1/np.e**2]
 par,cov=curve_fit(Gauss, X, Y)
+X2=[-0.5*4,0,0.5*4]
+Y2=[1/np.e**2,1,1/np.e**2]
+par2,cov2=curve_fit(Gauss, X2, Y2)
 def WStark(E,s):
     
    muoverB  = mu/B     
@@ -144,7 +147,7 @@ def fitfunction(vx_list,fudgefactor,s0,detuning):
 
 '''i.e., ascat and fitfunction are the same, but fitfunction returns a list of accelerations rather than one acceleration'''
 
-def phasespaceellipse2D(xx0,dxx,hfs=True):
+def phasespaceellipse2D(xx0,dxx,hfs_percentage=0,hfs=True):
     itry = 0
     hit = False
     while hit == False and itry < 100:
@@ -181,7 +184,7 @@ def phasespaceellipse2D(xx0,dxx,hfs=True):
     xx[3] = xx0[3]
     xx[6] = np.random.normal(xx0[6],dxx[6])     
     if hfs:
-        if(np.random.uniform() > 0.6666666):                            # in N=1; 3/5 in m=1 and 2/5 in m=0; (if > 0.4 then s=0)
+        if(np.random.uniform() >hfs_percentage):                            # in N=1; 3/5 in m=1 and 2/5 in m=0; (if > 0.4 then s=0)
            s = 0
         else:
            s = 1
@@ -251,33 +254,44 @@ def hexapole(endpoint,phi0hex,r0hex,xxs,s,hit):               #here, xxs is assu
     
     return [xxp,hit]     
 
-def lasercooling(endpoint,fudgefactor,s0,detuning,xxs,hit):           #here, xxs is assumed to be 1-D arrays with 7 elems; t,x,y,z,vx,vy,vz
-   
+def lasercooling(endpoint,fudgefactor,s0,detuning,xxs,hit,ycooling=True,n_reflections=35):           #here, xxs is assumed to be 1-D arrays with 7 elems; t,x,y,z,vx,vy,vz
+
+    centers=[L[0]+L[1]+L[2]+L[3]*float(i+1)/float(n_reflections) for i in range(n_reflections)]
+    z=[]
+    intensity=[]
     xxp = np.zeros(7)
     for i in range(0,7): xxp[i] = xxs[i]
-    nsteps = 0   
+    nsteps = 0
+    #print(endpoint)
     while((xxs[3] <= xxp[3] < endpoint) and hit == True):
-        
+        distance_center=abs(xxp[3]- min(centers, key=lambda x:abs(x-xxp[3])))
+        alpha0=Gauss(distance_center*1e3,*par2)
+        z.append(xxp[3])
+        intensity.append(alpha0)
+        #print(distance_center,alpha0)
         if((abs(xxp[1]) <= 0.5*x_laser) and (abs(xxp[4]) > 0.5*v_Doppler)) :
             alpha=Gauss(xxp[2]*1e3,*par)
-            xxp[4] += dt*ascat(xxp[4],fudgefactor,s0*alpha,detuning)
-        if((abs(xxp[2]) <= 0.5*x_laser) and (abs(xxp[5]) > 0.5*v_Doppler)) :
-            alpha=Gauss(xxp[1]*1e3,*par)
-            xxp[5] += dt*ascat(xxp[5],fudgefactor,s0*alpha,detuning)
-          
+            xxp[4] += dt*ascat(xxp[4],fudgefactor,s0*alpha*alpha0,detuning)
+        if ycooling == True:
+            if((abs(xxp[2]) <= 0.5*x_laser) and (abs(xxp[5]) > 0.5*v_Doppler)) :
+                alpha=Gauss(xxp[1]*1e3,*par)
+                xxp[5] += dt*ascat(xxp[5],fudgefactor,s0*alpha*alpha0,detuning)
+
         xxp[6] += 0
             
         xxp[1] += dt*xxp[4]
         xxp[2] += dt*xxp[5]
         xxp[3] += dt*xxp[6]
-            
         xxp[0] += dt
-            
         nsteps += 1
-        
+    #plt.plot(np.array(z)*1e3,[1/np.e**2 for i in z])
+    #plt.plot(np.array(z)*1e3,intensity)
+    #plt.xlabel('z(mm)')
+    ##plt.ylabel('intensity')
+    #plt.show()
     return [xxp,hit]  
 
-def trajectory_simulation(initial_pos,nn,nj,ff,s0,detun,phi0hex,lc = True,hex = True):
+def trajectory_simulation(initial_pos,nn,nj,ff,s0,detun,phi0hex,ycooling,lc = True,hex = True):
     z_position=[]
     x_positiion=[]
     y_position=[]
@@ -360,7 +374,7 @@ def trajectory_simulation(initial_pos,nn,nj,ff,s0,detun,phi0hex,lc = True,hex = 
         if L[1]>0:
             for j in range(nj):
                 if lc:
-                    [xx,hit]=lasercooling(L[0]+L[1]+L[2]+L[3]*float(j)/float(nj-1),ff,s0,detun,xx,hit)
+                    [xx,hit]=lasercooling(L[0]+L[1]+L[2]+L[3]*float(j)/float(nj-1),ff,s0,detun,xx,hit,ycooling=ycooling)
                     #print('cooling')
 
                     if hit:

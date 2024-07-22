@@ -128,3 +128,47 @@ def simulate_n_lc(nn, nj, fudgefactor, s00, detuning, Voltagehex, Ldet1, Ldet2,l
 
 
     plot_n_heatmaps(xs, ys, fudgefactor, s00, detuning, Voltagehex,hfs_bool,plot_titles=plot_titles, plot_circle=plot_circle)
+
+
+def simulate_number_mol_vs_hexvoltage(nn, nj, fudgefactor, s00, detuning, Voltagehex, Ldet1, Ldet2,lc_bool,hex_bool,hfs_bool,hfs_percent,plot_titles=False, plot_circle=False,plot_safe=False):
+    n=len(Voltagehex)
+    num_mol1=[]
+    num_mol2=[]
+    r=5
+    for i in range(n):
+        initial = [phasespaceellipse2D(xx0, dxx,hfs_percentage=hfs_percent, hfs=hfs_bool[i]) for _ in range(nn)]
+        x,y,z,vx,vy,ax,ay=trajectory_simulation(initial,nn,nj,ff=fudgefactor[i],s0=s00[i],detun=detuning[i],phi0hex=Voltagehex[i],lc=lc_bool[i],hex=hex_bool[i])
+        x1,y1,z1,vx1,vy1=xy_distribution(x,y,z,vx,vy,Ldet1)
+        num_mol1.append(points_in_circle(np.array(x1) * 1e3, np.array(y1) * 1e3, r))
+    r = 2.5
+    for i in range(n):
+        initial = [phasespaceellipse2D(xx0, dxx,hfs_percentage=hfs_percent, hfs=hfs_bool[i]) for _ in range(nn)]
+        x, y, z, vx, vy, ax, ay = trajectory_simulation(initial, nn, nj, ff=fudgefactor[i], s0=s00[i],
+                                                        detun=detuning[i], phi0hex=Voltagehex[i], lc=lc_bool[i],
+                                                        hex=hex_bool[i])
+        x1, y1, z1, vx1, vy1 = xy_distribution(x, y, z, vx, vy, Ldet1)
+        num_mol2.append(points_in_circle(np.array(x1) * 1e3, np.array(y1) * 1e3, r))
+    plot_mol_vs_voltage(Voltagehex, num_mol1, num_mol2,hfs_percent, r=[5,2.5])
+
+
+def simulate_y_cooling(nn, nj, fudgefactor, s00, detuning, Voltagehex, Ldet1, Ldet2,plot_titles=False, plot_circle=False,plot_safe=False):
+    initial = [phasespaceellipse2D(xx0, dxx) for i in range(nn)]
+    xlist, ylist, zlist, vx, vy, ax, ay = trajectory_simulation(initial, nn, nj, ff=fudgefactor, s0=s00, detun=detuning,
+                                                                phi0hex=Voltagehex, lc=True,ycooling=False)
+    xlist2, ylist2, zlist2, vx2, vy2, ax2, ay2 = trajectory_simulation(initial, nn, nj, ff=fudgefactor, s0=s00, detun=detuning,
+                                                                phi0hex=Voltagehex, lc=False, ycooling=False)
+
+    xlist3, ylist3, zlist3, vx3, vy3, ax3, ay3 = trajectory_simulation(initial, nn, nj, ff=fudgefactor, s0=s00,
+                                                                       detun=detuning,
+                                                                       phi0hex=0.001, lc=True, ycooling=False,hex=True)
+    xlist4, ylist4, zlist4, vx4, vy4, ax4, ay4 = trajectory_simulation(initial, nn, nj, ff=fudgefactor, s0=s00,
+                                                                       detun=detuning,
+                                                                       phi0hex=0.001, lc=False, ycooling=False)
+
+    xc1, yc1, zc1, vxc1, vyc1 = xy_distribution(xlist, ylist, zlist, vx, vy, Ldet1)
+    xc2, yc2, zc2, vxc2, vyc2 = xy_distribution(xlist2, ylist2, zlist2, vx2, vy2, Ldet1)
+    xc3, yc3, zc3, vxc3, vyc3 = xy_distribution(xlist3, ylist3, zlist3, vx3, vy3, Ldet1)
+    xc4, yc4, zc4, vxc4, vyc4 = xy_distribution(xlist4, ylist4, zlist4, vx4, vy4, Ldet1)
+
+    plot_4_heatmap(xc1, yc1, zc1, xc2, yc2, zc2, xc3, yc3, zc3, xc4, yc4, zc4, fudgefactor, s00, detuning,
+                   hexvolt=Voltagehex, Ldetection1=Ldet1, Ldetection2=Ldet2, plot_circle=plot_circle,plot_safe=plot_safe)

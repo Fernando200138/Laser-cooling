@@ -150,7 +150,7 @@ def plot_4_heatmap(x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4,ff,s0,det,hexvolt,Ldetect
     fig.set_size_inches(16,6)
     
     cax1=axs[0,0].imshow(H1.T, origin='lower', aspect='auto', cmap='sunset',extent=[xedges1[0], xedges1[-1], yedges1[0], yedges1[-1]])
-    axs[0,0].set_title('z= '+'%.2f'%Ldetection1+' mm',fontsize=20)
+    axs[0,0].set_title('Hexapole on')#'z= '+'%.2f'%Ldetection1+' mm',fontsize=20)
     #ax1.set_xlabel('x axis (mm)')
     axs[0,0].set_ylabel('y (mm)',fontsize=label_font-3)
     axs[0,0].text(-70,0,'2D-LC on',fontsize=label_font+5)
@@ -173,7 +173,7 @@ def plot_4_heatmap(x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4,ff,s0,det,hexvolt,Ldetect
 
 
     cax3=axs[0,1].imshow(H3.T, origin='lower', aspect='auto', cmap='sunset',extent=[xedges3[0], xedges3[-1], yedges3[0], yedges3[-1]])
-    axs[0,1].set_title('z= '+'%.2f'%3500+' mm',fontsize=20)
+    axs[0,1].set_title('Hexapole off')#'z= '+'%.2f'%3500+' mm',fontsize=20)
     #axs[0,1].set_xlabel('x axis (mm)')
     #axs[0,1].set_ylabel('y axis (mm)')
     cbar3=fig.colorbar(cax1,ax=axs[0,1],shrink=a, aspect=20*a)
@@ -193,7 +193,7 @@ def plot_4_heatmap(x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4,ff,s0,det,hexvolt,Ldetect
     axs[1,1].set_box_aspect(0.55)
     
     if plot_circle==False:
-        save_title='4_heatmap/'+'Heatmap_'+'%.2f_%.2f_%.2f_%.2f'%(ff,s0,det,hexvolt)+'.png'
+        save_title='../4_heatmap/'+'Heatmap_'+'%.2f_%.2f_%.2f_%.2f'%(ff,s0,det,hexvolt)+'.png'
     else:
         theta=np.linspace(0,2*pi,1001)
         x=5*np.cos(theta)
@@ -202,7 +202,7 @@ def plot_4_heatmap(x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4,ff,s0,det,hexvolt,Ldetect
         axs[1,0].plot(x,y,'w')
         axs[0,1].plot(x,y,'w')
         axs[1,1].plot(x,y,'w')
-        save_title='4_heatmap/'+'%.2f_%.2f_%.2f_%.2f'%(ff,s0,det,hexvolt)+'_circle'+'.png'
+        save_title='../4_heatmap/'+'%.2f_%.2f_%.2f_%.2f'%(ff,s0,det,hexvolt)+'_circle'+'.png'
     
     r=5
     points_in_c1=points_in_circle(np.array(x1)*1e3,np.array(y1)*1e3,r)
@@ -401,7 +401,7 @@ def plot_6_heatmap(x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4,x5,y5,z5,x6,y6,z6,ff,s0,d
         axs[1,1].plot(x, y, 'w')
         axs[2,0].plot(x, y, 'w')
         axs[2,1].plot(x, y, 'w')
-        save_title = '../6_heatmap/'+ 'Heatmap_nj_150' + '%.2f_%.2f_%.2f_%.2f' % (ff, s0, det, hexvolt) + '_circle' + '.png'
+        save_title = '../6_heatmap/'+ 'Heatmap_Gauss3' + '%.2f_%.2f_%.2f_%.2f' % (ff, s0, det, hexvolt) + '_circle' + '.png'
         #save_title = '6heatmap.png'
 
     r = 5
@@ -648,6 +648,24 @@ def plot_n_heatmaps(xs,ys,ffs,s0s,dets,hexvolts,hfs_bool,plot_titles,plot_circle
     plt.savefig('Heatmap_3.png')
     #plt.show()
 
+def plot_mol_vs_voltage(Voltagehex, num_mol1, num_mol2,hfs_percent, r=[5,2.5]):
+    fig,ax1=plt.subplots()
+    fig.set_size_inches(8,6)
+    ax1.set_xlabel('Hexapole Voltage [kV]')
+    ax1.set_ylabel('Number of Molecules (r = 5 mm)',color='red')
+    ax1.scatter(Voltagehex*1e-3,num_mol1,marker='o',color='red')
+    ax1.tick_params(axis='y')
+
+    ax2=ax1.twinx()
+    ax2.set_ylabel('Number of Molecules (r = 2.5 mm )',color='blue')
+    ax2.scatter(Voltagehex*1e-3,num_mol2,marker='o',color='blue')
+    ax2.tick_params(axis='y')
+
+
+    title='hfs_percent '+'%.2f'%hfs_percent
+    plt.title(title)
+    fig.tight_layout()
+    plt.savefig('../voltage_vs_num_molecules/'+title+'.png')
 
 '''
     a = 0.7
